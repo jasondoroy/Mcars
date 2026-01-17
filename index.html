@@ -1,0 +1,167 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCARS PH | AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Dark sleek background */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(220, 38, 38, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(30, 41, 59, 0.4) 0px, transparent 50%);
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .chat-widget-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+        #chat-window {
+            width: 400px;
+            height: 600px;
+            max-height: calc(100vh - 120px);
+            margin-bottom: 16px;
+            transform-origin: bottom right;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+        }
+        #chat-window.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            pointer-events: auto;
+        }
+        @media (max-width: 480px) {
+            #chat-window {
+                width: calc(100vw - 32px);
+                right: 16px;
+                bottom: 80px;
+                height: 70vh;
+            }
+            .chat-widget-container {
+                right: 16px;
+                bottom: 16px;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "@google/genai": "https://esm.sh/@google/genai@^1.37.0"
+      }
+    }
+    </script>
+</head>
+<body>
+    <!-- Main Center Branding (Optional but keeps it from being a completely blank screen) -->
+    <div class="text-center">
+        <div class="w-20 h-20 bg-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-red-900/40">
+            <i class="fa-solid fa-car-side text-white text-4xl"></i>
+        </div>
+        <h1 class="text-3xl font-black text-white tracking-tight mb-2">MCARS PH</h1>
+        <p class="text-slate-400 font-medium">Click the icon to chat with our AI expert.</p>
+    </div>
+
+    <!-- Chat Widget -->
+    <div class="chat-widget-container">
+        <!-- Chat Window -->
+        <div id="chat-window" class="glass-morphism rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="bg-slate-900 px-5 py-4 flex items-center justify-between border-b border-slate-800 shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center shadow-lg shadow-red-900/20">
+                        <i class="fa-solid fa-car-side text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-white font-bold text-sm tracking-tight">MCARS PH Assistant</h1>
+                        <div class="flex items-center">
+                            <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse mr-1.5"></span>
+                            <span class="text-slate-400 text-[10px] font-medium uppercase tracking-widest">Online</span>
+                        </div>
+                    </div>
+                </div>
+                <button id="reset-btn" class="text-slate-400 hover:text-white transition-colors p-1.5 rounded-full hover:bg-slate-800" title="Clear Conversation">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+            </div>
+
+            <!-- Message List -->
+            <div id="message-list" class="flex-1 overflow-y-auto p-4 bg-slate-50/30 space-y-4">
+                <!-- Messages injected here -->
+            </div>
+
+            <!-- Quick Actions -->
+            <div id="quick-actions" class="px-4 py-2 bg-white/50 border-t border-slate-100 overflow-x-auto whitespace-nowrap shrink-0 scrollbar-hide">
+                <div class="flex space-x-2" id="quick-actions-container">
+                    <!-- Buttons injected here -->
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-3 bg-white border-t border-slate-200 shrink-0">
+                <div class="relative flex items-center">
+                    <input
+                        id="chat-input"
+                        type="text"
+                        placeholder="Type your message..."
+                        class="w-full pl-3 pr-10 py-2.5 bg-slate-100 border-none rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:ring-1 focus:ring-red-500 transition-all outline-none"
+                    />
+                    <button
+                        id="send-btn"
+                        class="absolute right-1.5 h-8 w-8 flex items-center justify-center rounded-lg transition-all bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow-md shadow-red-200"
+                    >
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toggle Button (FAB) -->
+        <button id="chat-toggle" class="w-14 h-14 bg-red-600 text-white rounded-full flex items-center justify-center shadow-xl hover:bg-red-700 active:scale-90 transition-all group relative">
+            <i id="toggle-icon-open" class="fa-solid fa-comment-dots text-2xl transition-all"></i>
+            <i id="toggle-icon-close" class="fa-solid fa-xmark text-2xl hidden transition-all"></i>
+            
+            <!-- Notification Badge -->
+            <span id="chat-badge" class="absolute -top-1 -right-1 flex h-5 w-5">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 border-2 border-white text-[10px] items-center justify-center font-bold">1</span>
+            </span>
+        </button>
+    </div>
+
+    <script type="module" src="index.js"></script>
+</body>
+</html>
